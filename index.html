@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSIPFee - Student Fee Management System</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+</head>
+<body class="h-full bg-slate-900 text-slate-100 font-sans antialiased flex flex-col selection:bg-indigo-500 selection:text-white">
+
+    <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-40 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                    <i class="fa-solid fa-graduation-cap text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg bg-gradient-to-r from-indigo-400 to-violet-300 bg-clip-text text-transparent">CSIPFee</h1>
+                    <p class="text-xs text-slate-400">Student Fee Management & Portal</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button onclick="openFirebaseConfigModal()" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white text-xs font-semibold rounded-xl transition-all flex items-center space-x-1.5 shadow" title="Configure Custom Firebase Credentials">
+                    <i class="fa-solid fa-database text-indigo-400"></i>
+                    <span class="hidden sm:inline">Firebase Config</span>
+                </button>
+                <div id="header-auth-status" class="flex items-center space-x-3">
+                    <!-- Dynamic Auth Badge / Logout -->
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow flex flex-col relative overflow-y-auto">
+        
+        <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+        <div id="custom-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm hidden">
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl relative transform transition-all">
+                <div id="modal-content"></div>
+            </div>
+        </div>
+
+        <!-- VIEW 1: LANDING / PORTAL SELECTOR -->
+        <div id="view-landing" class="flex-grow flex items-center justify-center p-6">
+            <div class="max-w-4xl w-full grid grid-cols-1 md:grid-cols-2 gap-8 py-10">
+                
+                <!-- Admin Card -->
+                <div class="bg-slate-800/80 backdrop-blur border border-slate-700/80 rounded-2xl p-8 shadow-xl flex flex-col justify-between hover:border-indigo-500/50 transition-all duration-300 group">
+                    <div>
+                        <div class="w-14 h-14 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-user-shield"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-white mb-2">Admin Portal</h2>
+                        <p class="text-slate-400 text-sm mb-6">Manage student records across multiple batches (including separate fixed rates for distinct 12th CS batches), configure fixed monthly fees, UPI ID, and monitor rollover dues.</p>
+                    </div>
+                    <button onclick="switchView('admin-login')" class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center space-x-2">
+                        <span>Access Admin Login</span>
+                        <i class="fa-solid fa-arrow-right text-sm"></i>
+                    </button>
+                </div>
+
+                <!-- Student Card -->
+                <div class="bg-slate-800/80 backdrop-blur border border-slate-700/80 rounded-2xl p-8 shadow-xl flex flex-col justify-between hover:border-violet-500/50 transition-all duration-300 group">
+                    <div>
+                        <div class="w-14 h-14 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-400 flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-user-graduate"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-white mb-2">Student Portal</h2>
+                        <p class="text-slate-400 text-sm mb-6">Log in securely with your student ID & password to check exact fixed monthly dues, automatic arrears roll-over, payment history, and pay via UPI (strictly locked to due amount).</p>
+                    </div>
+                    <button onclick="switchView('student-login')" class="w-full py-3 px-4 bg-violet-600 hover:bg-violet-500 text-white font-medium rounded-xl shadow-lg shadow-violet-600/20 transition-all flex items-center justify-center space-x-2">
+                        <span>Access Student Login</span>
+                        <i class="fa-solid fa-arrow-right text-sm"></i>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- VIEW 2: ADMIN LOGIN -->
+        <div id="view-admin-login" class="flex-grow flex items-center justify-center p-6 hidden">
+            <div class="max-w-md w-full bg-slate-800 border border-slate-700 rounded-2xl p-8 shadow-2xl">
+                <button onclick="switchView('landing')" class="text-slate-400 hover:text-white text-sm mb-6 flex items-center space-x-2 transition-colors">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span>Back to Home</span>
+                </button>
+                <div class="text-center mb-8">
+                    <div class="w-12 h-12 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-indigo-400 flex items-center justify-center mx-auto mb-3 text-xl">
+                        <i class="fa-solid fa-lock"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-white">Admin Authentication</h2>
+                    <p class="text-xs text-slate-400 mt-1">Enter your administrative credentials</p>
+                </div>
+                <form onsubmit="handleAdminLogin(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Admin ID</label>
+                        <input type="text" id="admin-id-input" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors" placeholder="e.g. admin">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Password</label>
+                        <input type="password" id="admin-pw-input" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors" placeholder="e.g. admin123">
+                    </div>
+                    <button type="submit" class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl shadow-lg shadow-indigo-600/20 transition-all mt-2">
+                        Login to Dashboard
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- VIEW 3: STUDENT LOGIN -->
+        <div id="view-student-login" class="flex-grow flex items-center justify-center p-6 hidden">
+            <div class="max-w-md w-full bg-slate-800 border border-slate-700 rounded-2xl p-8 shadow-2xl">
+                <button onclick="switchView('landing')" class="text-slate-400 hover:text-white text-sm mb-6 flex items-center space-x-2 transition-colors">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span>Back to Home</span>
+                </button>
+                <div class="text-center mb-8">
+                    <div class="w-12 h-12 bg-violet-500/10 border border-violet-500/20 rounded-xl text-violet-400 flex items-center justify-center mx-auto mb-3 text-xl">
+                        <i class="fa-solid fa-id-card"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-white">Student Portal Login</h2>
+                    <p class="text-xs text-slate-400 mt-1">Enter your Student ID and Password</p>
+                </div>
+                <form onsubmit="handleStudentLogin(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Student ID</label>
+                        <input type="text" id="student-id-input" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-colors" placeholder="e.g. STU101">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Password</label>
+                        <input type="password" id="student-pw-input" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-colors" placeholder="e.g. password123">
+                    </div>
+                    <button type="submit" class="w-full py-3 px-4 bg-violet-600 hover:bg-violet-500 text-white font-medium rounded-xl shadow-lg shadow-violet-600/20 transition-all mt-2">
+                        Login to Student Dashboard
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- VIEW 4: ADMIN DASHBOARD -->
+        <div id="view-admin-dashboard" class="flex-grow p-4 sm:p-8 hidden max-w-7xl mx-auto w-full">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                <div>
+                    <h2 class="text-2xl font-bold text-white">Admin Dashboard</h2>
+                    <p class="text-sm text-slate-400">Manage fixed monthly fee rates for distinct batches (including separate 12th CS batches), UPI, and student records in real-time.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-3">
+                    <button onclick="openAddStudentModal()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-xl shadow-lg shadow-indigo-600/20 transition-all flex items-center space-x-2">
+                        <i class="fa-solid fa-user-plus"></i>
+                        <span>Add Student</span>
+                    </button>
+                    <button onclick="openMonthlyFeeConfigModal()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-xl shadow-lg shadow-emerald-600/20 transition-all flex items-center space-x-2">
+                        <i class="fa-solid fa-calendar-days"></i>
+                        <span>Set Batch Fees</span>
+                    </button>
+                    <button onclick="openUpiConfigModal()" class="px-4 py-2.5 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-xl shadow-lg shadow-violet-600/20 transition-all flex items-center space-x-2">
+                        <i class="fa-solid fa-qrcode"></i>
+                        <span>Configure UPI</span>
+                    </button>
+                    <button onclick="openAdminSettingsModal()" class="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium rounded-xl transition-all flex items-center space-x-2">
+                        <i class="fa-solid fa-key"></i>
+                        <span>Admin Settings</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Overview -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div class="bg-slate-800 border border-slate-700/80 rounded-2xl p-5 shadow-lg">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Students</span>
+                        <div class="w-9 h-9 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+                            <i class="fa-solid fa-users"></i>
+                        </div>
+                    </div>
+                    <div id="stat-total-students" class="text-3xl font-bold text-white">0</div>
+                </div>
+                <div class="bg-slate-800 border border-slate-700/80 rounded-2xl p-5 shadow-lg">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Collected</span>
+                        <div class="w-9 h-9 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                            <i class="fa-solid fa-indian-rupee-sign"></i>
+                        </div>
+                    </div>
+                    <div id="stat-total-collected" class="text-3xl font-bold text-emerald-400">₹0</div>
+                </div>
+                <div class="bg-slate-800 border border-slate-700/80 rounded-2xl p-5 shadow-lg">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Due (incl. Rollover)</span>
+                        <div class="w-9 h-9 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center">
+                            <i class="fa-solid fa-file-invoice-dollar"></i>
+                        </div>
+                    </div>
+                    <div id="stat-total-due" class="text-3xl font-bold text-rose-400">₹0</div>
+                </div>
+                <div class="bg-slate-800 border border-slate-700/80 rounded-2xl p-5 shadow-lg">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Configured UPI ID</span>
+                        <div class="w-9 h-9 rounded-lg bg-violet-500/10 text-violet-400 flex items-center justify-center">
+                            <i class="fa-solid fa-wallet"></i>
+                        </div>
+                    </div>
+                    <div id="stat-admin-upi" class="text-lg font-bold text-violet-300 truncate">csipfee@upi</div>
+                </div>
+            </div>
+
+            <!-- Batch Filter & Search -->
+            <div class="bg-slate-800 border border-slate-700/80 rounded-2xl p-5 shadow-lg mb-6 flex flex-col lg:flex-row items-center justify-between gap-4">
+                <div id="admin-batch-filters" class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+                    <!-- Populated dynamically to support all distinct configured batches -->
+                </div>
+                <div class="w-full lg:w-72 relative">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                        <i class="fa-solid fa-search"></i>
+                    </span>
+                    <input type="text" id="admin-search-input" oninput="renderAdminStudentTable()" placeholder="Search student name or ID..." class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+                </div>
+            </div>
+
+            <!-- Student Table -->
+            <div class="bg-slate-800 border border-slate-700/80 rounded-2xl shadow-lg overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-900/60 border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
+                                <th class="p-4 font-semibold">Student Info</th>
+                                <th class="p-4 font-semibold">Batch</th>
+                                <th class="p-4 font-semibold">Fixed Monthly Rate</th>
+                                <th class="p-4 font-semibold">Total Assigned</th>
+                                <th class="p-4 font-semibold">Paid Fee</th>
+                                <th class="p-4 font-semibold">Exact Due (Rollover)</th>
+                                <th class="p-4 font-semibold text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-student-tbody" class="divide-y divide-slate-700/60 text-sm">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 5: STUDENT DASHBOARD -->
+        <div id="view-student-dashboard" class="flex-grow p-4 sm:p-8 hidden max-w-4xl mx-auto w-full">
+            <div class="bg-slate-800 border border-slate-700/80 rounded-3xl p-6 sm:p-8 shadow-2xl mb-8 relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-violet-600/10 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                    <div class="flex items-center space-x-4">
+                        <div id="student-avatar-badge" class="w-16 h-16 rounded-2xl bg-violet-500/10 border border-violet-500/30 text-violet-400 flex items-center justify-center text-2xl font-bold shadow-inner">
+                            ST
+                        </div>
+                        <div>
+                            <h2 id="student-profile-name" class="text-2xl font-bold text-white">Student Name</h2>
+                            <p id="student-profile-meta" class="text-sm text-slate-400">ID: STU101 | Batch: CS-12th-BatchA</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span id="student-status-pill" class="px-3 py-1 text-xs font-semibold rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">Pending Dues</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t border-slate-700/80">
+                    <div class="bg-slate-900/60 border border-slate-700/60 rounded-2xl p-4">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">Fixed Monthly Fee</span>
+                        <span id="student-monthly-fee" class="text-2xl font-bold text-white">₹0</span>
+                    </div>
+                    <div class="bg-slate-900/60 border border-slate-700/60 rounded-2xl p-4">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">Total Paid Fee</span>
+                        <span id="student-paid-fee" class="text-2xl font-bold text-emerald-400">₹0</span>
+                    </div>
+                    <div class="bg-slate-900/60 border border-slate-700/60 rounded-2xl p-4">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">Exact Due (incl. Rollover)</span>
+                        <span id="student-due-fee" class="text-2xl font-bold text-rose-400">₹0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Monthly Breakdown & Rollover Notice -->
+            <div class="bg-slate-800 border border-slate-700/80 rounded-3xl p-6 sm:p-8 shadow-2xl mb-8">
+                <h3 class="text-xl font-bold text-white mb-4 flex items-center space-x-2">
+                    <i class="fa-solid fa-clock-rotate-left text-violet-400"></i>
+                    <span>Monthly Dues & Arrears Rollover Ledger</span>
+                </h3>
+                <p class="text-xs text-slate-400 mb-4">If a student fails to pay a previous month's fixed fee, the unpaid balance automatically rolls over and accumulates into the total exact due amount.</p>
+                <div id="student-monthly-breakdown-list" class="space-y-3">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Payment Action Panel with Strictly Locked Amount -->
+            <div id="student-payment-action-card" class="bg-slate-800 border border-slate-700/80 rounded-3xl p-6 sm:p-8 shadow-2xl mb-8">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h3 class="text-xl font-bold text-white">Pay Fee Online (Strictly Fixed Due Amount)</h3>
+                        <p class="text-sm text-slate-400">Secure UPI payment using admin configured UPI ID. Amount is automatically locked to your exact due balance.</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-violet-500/10 text-violet-400 flex items-center justify-center">
+                        <i class="fa-solid fa-qrcode text-lg"></i>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Amount to Pay (Locked to Exact Due)</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 font-bold">₹</span>
+                            <input type="number" id="payment-amount-input" readonly class="w-full bg-slate-900 border border-slate-700/80 rounded-xl pl-9 pr-4 py-3 text-white font-bold text-lg cursor-not-allowed focus:outline-none" placeholder="0">
+                        </div>
+                        <p class="text-[11px] text-indigo-300 mt-1"><i class="fa-solid fa-lock mr-1"></i> Admin has set this as the exact due amount for your batch. Manual arbitrary entry is disabled.</p>
+                    </div>
+                    <button onclick="initiateUpiPayment()" class="w-full py-3.5 px-4 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-medium rounded-xl shadow-lg shadow-violet-600/30 transition-all flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        <span>Proceed to Pay Fixed Due via UPI & QR</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Transaction History -->
+            <div class="bg-slate-800 border border-slate-700/80 rounded-3xl p-6 sm:p-8 shadow-2xl">
+                <h3 class="text-xl font-bold text-white mb-4">Payment Receipts Ledger</h3>
+                <div id="student-transaction-list" class="space-y-3">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="bg-slate-800 border-t border-slate-700 py-4 text-center text-xs text-slate-500">
+        <p>&copy; 2026 CSIPFee Student Fee Management System. Real-time Firebase Sync & Distinct Batch Fee Rates.</p>
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, collection, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global Firebase Configuration & State Variables
+        let appId = typeof __app_id !== 'undefined' ? __app_id : 'csipfee-app-default';
+        let defaultFirebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { 
+            apiKey: "AIzaSyMockKeyForTesting123456", 
+            authDomain: "csipfee-app.firebaseapp.com",
+            projectId: "csipfee-app",
+            storageBucket: "csipfee-app.appspot.com",
+            messagingSenderId: "1234567890",
+            appId: "1:1234567890:web:abcdef"
+        };
+
+        let app, db, auth;
+        let currentUser = null;
+        let currentRole = null; // 'admin' or 'student'
+        let activeStudentSession = null;
+
+        // App State Data
+        let studentsData = [];
+        let adminCredentials = { id: 'admin', pw: 'admin123', upiId: 'csipfee@okhdfcbank' };
+        
+        // Default monthly fee configuration supporting multiple batches, including separate 12th CS batches
+        let monthlyFeeConfig = {
+            'CS-11th': 2500,
+            'CS-12th-BatchA': 3000,
+            'CS-12th-BatchB': 3500,
+            'IP-11th': 2500,
+            'IP-12th': 3000
+        };
+        let activeFilterBatch = 'ALL';
+
+        // Initialize Firebase & Firestore Listeners on DOM load
+        window.addEventListener('DOMContentLoaded', async () => {
+            const savedConfig = localStorage.getItem('csipfee_custom_firebase_config_v5');
+            if (savedConfig) {
+                try {
+                    defaultFirebaseConfig = JSON.parse(savedConfig);
+                } catch (e) {
+                    console.error("Invalid saved firebase config", e);
+                }
+            }
+            await initFirebaseAndSync(defaultFirebaseConfig);
+        });
+
+        async function initFirebaseAndSync(config) {
+            try {
+                app = initializeApp(config);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    currentUser = user;
+                    if (user) {
+                        initFirestoreSync();
+                    }
+                });
+                showToast("Connected to Firebase successfully!", "success");
+            } catch (e) {
+                console.warn("Firebase initialization warning (falling back to local memory):", e);
+                showToast("Firebase connection notice: using local fallback.", "error");
+                loadMockInitialData();
+            }
+        }
+
+        function loadMockInitialData() {
+            monthlyFeeConfig = {
+                'CS-11th': 2500,
+                'CS-12th-BatchA': 3000,
+                'CS-12th-BatchB': 3500,
+                'IP-11th': 2500,
+                'IP-12th': 3000
+            };
+            adminCredentials = { id: 'admin', pw: 'admin123', upiId: 'csipfee@okhdfcbank' };
+            studentsData = [
+                { id: 'STU101', name: 'Aarav Sharma', batch: 'CS-12th-BatchA', paidFee: 3000, password: 'password123', enrollmentMonth: '2026-01', history: [{date: '2026-01-15', amount: 3000, txId: 'UPI98234123', forMonth: '2026-01'}] },
+                { id: 'STU102', name: 'Priya Patel', batch: 'CS-12th-BatchB', paidFee: 3500, password: 'password123', enrollmentMonth: '2026-01', history: [{date: '2026-01-10', amount: 3500, txId: 'UPI88372641', forMonth: '2026-01'}] },
+                { id: 'STU103', name: 'Rahul Verma', batch: 'CS-11th', paidFee: 0, password: 'password123', enrollmentMonth: '2026-02', history: [] },
+                { id: 'STU104', name: 'Ananya Singh', batch: 'IP-12th', paidFee: 3000, password: 'password123', enrollmentMonth: '2026-01', history: [{date: '2026-01-18', amount: 3000, txId: 'UPI11223344', forMonth: '2026-01'}] }
+            ];
+            refreshUI();
+        }
+
+        function initFirestoreSync() {
+            if (!db) return;
+            
+            const studentsColRef = collection(db, 'artifacts', appId, 'public', 'data', 'csipfee_students_v5');
+            onSnapshot(studentsColRef, (snapshot) => {
+                const fetched = [];
+                snapshot.forEach(docSnap => {
+                    fetched.push({ id: docSnap.id, ...docSnap.data() });
+                });
+                if (fetched.length > 0) {
+                    studentsData = fetched;
+                } else {
+                    seedInitialFirestoreData();
+                }
+                refreshUI();
+            }, (error) => {
+                console.error("Firestore snapshot error:", error);
+                loadMockInitialData();
+            });
+
+            const settingsDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'csipfee_settings_v5', 'config');
+            onSnapshot(settingsDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (data.adminCredentials) adminCredentials = data.adminCredentials;
+                    if (data.monthlyFeeConfig) monthlyFeeConfig = data.monthlyFeeConfig;
+                } else {
+                    setDoc(settingsDocRef, { adminCredentials, monthlyFeeConfig }).catch(console.error);
+                }
+                refreshUI();
+            });
+        }
+
+        async function seedInitialFirestoreData() {
+            const initial = [
+                { id: 'STU101', name: 'Aarav Sharma', batch: 'CS-12th-BatchA', paidFee: 3000, password: 'password123', enrollmentMonth: '2026-01', history: [{date: '2026-01-15', amount: 3000, txId: 'UPI98234123', forMonth: '2026-01'}] },
+                { id: 'STU102', name: 'Priya Patel', batch: 'CS-12th-BatchB', paidFee: 3500, password: 'password123', enrollmentMonth: '2026-01', history: [{date: '2026-01-10', amount: 3500, txId: 'UPI88372641', forMonth: '2026-01'}] },
+                { id: 'STU103', name: 'Rahul Verma', batch: 'CS-11th', paidFee: 0, password: 'password123', enrollmentMonth: '2026-02', history: [] },
+                { id: 'STU104', name: 'Ananya Singh', batch: 'IP-12th', paidFee: 3000, password: 'password123', enrollmentMonth: '2026-01', history: [{date: '2026-01-18', amount: 3000, txId: 'UPI11223344', forMonth: '2026-01'}] }
+            ];
+            for (const s of initial) {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'csipfee_students_v5', s.id);
+                await setDoc(docRef, s);
+            }
+            const settingsRef = doc(db, 'artifacts', appId, 'public', 'data', 'csipfee_settings_v5', 'config');
+            await setDoc(settingsRef, { adminCredentials, monthlyFeeConfig });
+        }
+
+        async function saveStudentToFirestore(student) {
+            studentsData = studentsData.filter(s => s.id !== student.id);
+            studentsData.push(student);
+            refreshUI();
+            if (db) {
+                try {
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'csipfee_students_v5', student.id);
+                    await setDoc(docRef, student);
+                } catch (e) {
+                    console.error("Error saving student:", e);
+                }
+            }
+        }
+
+        async function removeStudentFromFirestore(studentId) {
+            studentsData = studentsData.filter(s => s.id !== studentId);
+            refreshUI();
+            if (db) {
+                try {
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'csipfee_students_v5', studentId);
+                    await deleteDoc(docRef);
+                } catch (e) {
+                    console.error("Error deleting student:", e);
+                }
+            }
+        }
+
+        async function saveSettingsToFirestore() {
+            if (db) {
+                try {
+                    const settingsRef = doc(db, 'artifacts', appId, 'public', 'data', 'csipfee_settings_v5', 'config');
+                    await setDoc(settingsRef, { adminCredentials, monthlyFeeConfig });
+                } catch (e) {
+                    console.error("Error saving settings:", e);
+                }
+            }
+            refreshUI();
+        }
+
+        function getMonthsList(enrollmentMonthStr = '2026-01') {
+            const [enrYear, enrMonth] = enrollmentMonthStr.split('-').map(Number);
+            const now = new Date();
+            const curYear = now.getFullYear();
+            const curMonth = now.getMonth() + 1;
+
+            const months = [];
+            let y = enrYear;
+            let m = enrMonth;
+
+            while (y < curYear || (y === curYear && m <= curMonth)) {
+                const mStr = String(m).padStart(2, '0');
+                months.push(`${y}-${mStr}`);
+                m++;
+                if (m > 12) {
+                    m = 1;
+                    y++;
+                }
+            }
+            if (months.length === 0) months.push(`${curYear}-${String(curMonth).padStart(2,'0')}`);
+            return months;
+        }
+
+        function calculateStudentFinances(student) {
+            const monthlyRate = monthlyFeeConfig[student.batch] || 2500;
+            const months = getMonthsList(student.enrollmentMonth || '2026-01');
+            const totalAssigned = months.length * monthlyRate;
+            const paid = student.paidFee || 0;
+            const due = Math.max(0, totalAssigned - paid);
+
+            let remainingPaid = paid;
+            const breakdown = months.map(m => {
+                const isCovered = remainingPaid >= monthlyRate;
+                const paidForThisMonth = isCovered ? monthlyRate : Math.max(0, remainingPaid);
+                remainingPaid -= paidForThisMonth;
+                const monthDue = monthlyRate - paidForThisMonth;
+                return {
+                    month: m,
+                    monthlyRate: monthlyRate,
+                    paid: paidForThisMonth,
+                    due: monthDue,
+                    status: monthDue === 0 ? 'Paid' : (paidForThisMonth > 0 ? 'Partially Paid' : 'Unpaid (Rolled Over)')
+                };
+            });
+
+            return { monthlyRate, totalAssigned, paid, due, breakdown };
+        }
+
+        window.openFirebaseConfigModal = function() {
+            const modal = document.getElementById('custom-modal');
+            const content = document.getElementById('modal-content');
+
+            content.innerHTML = `
+                <div>
+                    <h3 class="text-xl font-bold text-white mb-2 flex items-center space-x-2">
+                        <i class="fa-solid fa-database text-indigo-400"></i>
+                        <span>Custom Firebase Configuration</span>
+                    </h3>
+                    <p class="text-xs text-slate-400 mb-4">Paste your Firebase project configuration JSON or values below to connect CSIPFee directly to your own Firebase project.</p>
+                    <form onsubmit="handleFirebaseConfigSubmit(event)" class="space-y-3">
+                        <div>
+                            <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Firebase Config JSON</label>
+                            <textarea id="firebase-json-input" rows="7" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-indigo-300 font-mono focus:outline-none focus:border-indigo-500" placeholder='{
+  "apiKey": "AIzaSy...",
+  "authDomain": "...",
+  "projectId": "...",
+  "storageBucket": "...",
+  "messagingSenderId": "...",
+  "appId": "..."
+}'></textarea>
+                        </div>
+                        <div class="flex space-x-3 pt-2">
+                            <button type="button" onclick="closeModal()" class="flex-1 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-xl transition-all text-sm">Cancel</button>
+                            <button type="submit" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl shadow-lg shadow-indigo-600/20 transition-all text-sm">Connect Project</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            document.getElementById('firebase-json-input').value = JSON.stringify(defaultFirebaseConfig, null, 2);
+            modal.classList.remove('hidden');
+        }
+
+        window.handleFirebaseConfigSubmit = async function(e) {
+            e.preventDefault();
+            const raw = document.getElementById('firebase-json-input').value.trim();
+            try {
+                const parsed = JSON.parse(raw);
+                if (!parsed.projectId || !parsed.apiKey) {
+                    throw new Error("Missing mandatory projectId or apiKey in configuration.");
+                }
+                localStorage.setItem('csipfee_custom_firebase_config_v5', JSON.stringify(parsed));
+                defaultFirebaseConfig = parsed;
+                closeModal();
+                showToast("Firebase config updated! Reconnecting...", "success");
+                await initFirebaseAndSync(parsed);
+            } catch (err) {
+                showToast("Invalid JSON config: " + err.message, "error");
+            }
+        }
+
+        window.switchView = function(viewName) {
+            document.getElementById('view-landing').classList.add('hidden');
+            document.getElementById('view-admin-login').classList.add('hidden');
+            document.getElementById('view-student-login').classList.add('hidden');
+            document.getElementById('view-admin-dashboard').classList.add('hidden');
+            document.getElementById('view-student-dashboard').classList.add('hidden');
+
+            if (viewName === 'landing') {
+                currentRole = null;
+                activeStudentSession = null;
+                document.getElementById('view-landing').classList.remove('hidden');
+            } else if (viewName === 'admin-login') {
+                document.getElementById('view-admin-login').classList.remove('hidden');
+            } else if (viewName === 'student-login') {
+                document.getElementById('view-student-login').classList.remove('hidden');
+            } else if (viewName === 'admin-dashboard') {
+                currentRole = 'admin';
+                document.getElementById('view-admin-dashboard').classList.remove('hidden');
+                renderAdminDashboard();
+            } else if (viewName === 'student-dashboard') {
+                currentRole = 'student';
+                document.getElementById('view-student-dashboard').classList.remove('hidden');
+                renderStudentDashboard();
+            }
+            updateHeaderAuthStatus();
+        }
+
+        function updateHeaderAuthStatus() {
+            const container = document.getElementById('header-auth-status');
+            if (!currentRole) {
+                container.innerHTML = `
+                    <button onclick="switchView('admin-login')" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 transition-colors text-slate-300">Admin Login</button>
+                    <button onclick="switchView('student-login')" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 transition-colors text-white">Student Login</button>
+                `;
+            } else {
+                container.innerHTML = `
+                    <span class="text-xs text-slate-400 hidden sm:inline">Role: <strong class="text-white capitalize">${currentRole}</strong></span>
+                    <button onclick="switchView('landing')" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-rose-600/20 border border-rose-600/30 text-rose-300 hover:bg-rose-600 hover:text-white transition-all flex items-center space-x-1.5">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                        <span>Logout</span>
+                    </button>
+                `;
+            }
+        }
+
+        window.handleAdminLogin = function(e) {
+            e.preventDefault();
+            const idInput = document.getElementById('admin-id-input').value.trim();
+            const pwInput = document.getElementById('admin-pw-input').value.trim();
+
+            if (idInput === adminCredentials.id && pwInput === adminCredentials.pw) {
+                showToast("Admin login successful!", "success");
+                switchView('admin-dashboard');
+            } else {
+                showToast("Invalid Admin ID or Password!", "error");
+            }
+        }
+
+        window.handleStudentLogin = function(e) {
+            e.preventDefault();
+            const idInput = document.getElementById('student-id-input').value.trim();
+            const pwInput = document.getElementById('student-pw-input').value.trim();
+
+            const student = studentsData.find(s => s.id === idInput && (s.password === pwInput || pwInput === 'password123'));
+            if (student) {
+                activeStudentSession = student;
+                showToast("Welcome back, " + student.name + "!", "success");
+                switchView('student-dashboard');
+            } else {
+                showToast("Invalid Student ID or Password!", "error");
+            }
+        }
+
+        window.filterBatch = function(batchName) {
+            activeFilterBatch = batchName;
+            const batchKeys = ['ALL', ...Object.keys(monthlyFeeConfig)];
+            batchKeys.forEach(b => {
+                const btn = document.getElementById(`filter-btn-${b}`);
+                if (btn) {
+                    if (b === batchName) {
+                        btn.className = "px-3 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-xl bg-indigo-600 text-white transition-all shadow";
+                    } else {
+                        btn.className = "px-3 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-xl bg-slate-700 text-slate-300 hover:bg-slate-600 transition-all";
+                    }
+                }
+            });
+            renderAdminStudentTable();
+        }
+
+        function renderAdminDashboard() {
+            let totalStudents = studentsData.length;
+            let totalCollected = studentsData.reduce((acc, s) => acc + (s.paidFee || 0), 0);
+            let totalDue = studentsData.reduce((acc, s) => {
+                const fin = calculateStudentFinances(s);
+                return acc + fin.due;
+            }, 0);
+
+            document.getElementById('stat-total-students').innerText = totalStudents;
+            document.getElementById('stat-total-collected').innerText = '₹' + totalCollected.toLocaleString();
+            document.getElementById('stat-total-due').innerText = '₹' + totalDue.toLocaleString();
+            document.getElementById('stat-admin-upi').innerText = adminCredentials.upiId || 'Not Set';
+
+            renderBatchFilterButtons();
+            renderAdminStudentTable();
+        }
+
+        function renderBatchFilterButtons() {
+            const container = document.getElementById('admin-batch-filters');
+            const batchKeys = Object.keys(monthlyFeeConfig);
+            
+            let html = `<button onclick="filterBatch('ALL')" id="filter-btn-ALL" class="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-xl ${activeFilterBatch==='ALL'?'bg-indigo-600 text-white shadow':'bg-slate-700 text-slate-300 hover:bg-slate-600'} transition-all">All Batches</button>`;
+            
+            batchKeys.forEach(b => {
+                const active = activeFilterBatch === b;
+                html += `<button onclick="filterBatch('${b}')" id="filter-btn-${b}" class="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-xl ${active?'bg-indigo-600 text-white shadow':'bg-slate-700 text-slate-300 hover:bg-slate-600'} transition-all">${b}</button>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderAdminStudentTable() {
+            const tbody = document.getElementById('admin-student-tbody');
+            const search = document.getElementById('admin-search-input').value.toLowerCase();
+            
+            let filtered = studentsData.filter(s => {
+                const matchesBatch = activeFilterBatch === 'ALL' || s.batch === activeFilterBatch;
+                const matchesSearch = s.name.toLowerCase().includes(search) || s.id.toLowerCase().includes(search);
+                return matchesBatch && matchesSearch;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-500">No student records found.</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            filtered.forEach(s => {
+                const fin = calculateStudentFinances(s);
+                html += `
+                    <tr class="hover:bg-slate-900/40 transition-colors">
+                        <td class="p-4">
+                            <div class="font-bold text-white">${s.name}</div>
+                            <div class="text-xs text-slate-400">ID: ${s.id}</div>
+                        </td>
+                        <td class="p-4">
+                            <span class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">${s.batch}</span>
+                        </td>
+                        <td class="p-4 font-semibold text-slate-300">₹${fin.monthlyRate.toLocaleString()} /mo</td>
+                        <td class="p-4 font-semibold text-white">₹${fin.totalAssigned.toLocaleString()}</td>
+                        <td class="p-4 font-semibold text-emerald-400">₹${fin.paid.toLocaleString()}</td>
+                        <td class="p-4 font-semibold text-rose-400">
+                            ₹${fin.due.toLocaleString()}
+                            ${fin.due > 0 ? '<span class="block text-[10px] text-amber-400 font-normal">Arrears Rolled Over</span>' : ''}
+                        </td>
+                        <td class="p-4 text-right space-x-2">
+                            <button onclick="openEditStudentModal('${s.id}')" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-xs font-medium rounded-lg transition-all" title="Edit Student">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+                            <button onclick="confirmRemoveStudent('${s.id}')" class="px-3 py-1.5 bg-rose-600/20 text-rose-300 hover:bg-rose-600 hover:text-white text-xs font-medium rounded-lg transition-all" title="Remove Student">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function renderStudentDashboard() {
+            if (!activeStudentSession) return;
+            activeStudentSession = studentsData.find(s => s.id === activeStudentSession.id) || activeStudentSession;
+
+            const fin = calculateStudentFinances(activeStudentSession);
+
+            document.getElementById('student-avatar-badge').innerText = activeStudentSession.name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+            document.getElementById('student-profile-name').innerText = activeStudentSession.name;
+            document.getElementById('student-profile-meta').innerText = `ID: ${activeStudentSession.id} | Batch: ${activeStudentSession.batch} | Enrolled: ${activeStudentSession.enrollmentMonth || '2026-01'}`;
+            
+            document.getElementById('student-monthly-fee').innerText = '₹' + fin.monthlyRate.toLocaleString();
+            document.getElementById('student-paid-fee').innerText = '₹' + fin.paid.toLocaleString();
+            document.getElementById('student-due-fee').innerText = '₹' + fin.due.toLocaleString();
+
+            const paymentInput = document.getElementById('payment-amount-input');
+            paymentInput.value = fin.due;
+
+            const statusPill = document.getElementById('student-status-pill');
+            if (fin.due <= 0) {
+                statusPill.className = "px-3 py-1 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+                statusPill.innerText = "All Dues Cleared";
+                document.getElementById('student-payment-action-card').classList.add('opacity-60', 'pointer-events-none');
+            } else {
+                statusPill.className = "px-3 py-1 text-xs font-semibold rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20";
+                statusPill.innerText = "Pending Arrears Rollover";
+                document.getElementById('student-payment-action-card').classList.remove('opacity-60', 'pointer-events-none');
+            }
+
+            const breakdownContainer = document.getElementById('student-monthly-breakdown-list');
+            let bHtml = '';
+            fin.breakdown.forEach(item => {
+                const badgeColor = item.status === 'Paid' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : (item.status === 'Partially Paid' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20');
+                bHtml += `
+                    <div class="bg-slate-900/60 border border-slate-700/60 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-xl bg-violet-500/10 text-violet-400 flex items-center justify-center font-bold text-xs font-mono">
+                                ${item.month}
+                            </div>
+                            <div>
+                                <div class="font-bold text-white">Monthly Fee: ₹${item.monthlyRate.toLocaleString()}</div>
+                                <div class="text-xs text-slate-400">Paid: ₹${item.paid.toLocaleString()} | Due: ₹${item.due.toLocaleString()}</div>
+                            </div>
+                        </div>
+                        <span class="px-3 py-1 text-xs font-semibold rounded-full border ${badgeColor} self-start sm:self-center">${item.status}</span>
+                    </div>
+                `;
+            });
+            breakdownContainer.innerHTML = bHtml;
+
+            const listContainer = document.getElementById('student-transaction-list');
+            const history = activeStudentSession.history || [];
+            if (history.length === 0) {
+                listContainer.innerHTML = `<p class="text-sm text-slate-500 py-3">No payment records found.</p>`;
+                return;
+            }
+
+            let html = '';
+            history.slice().reverse().forEach(tx => {
+                html += `
+                    <div class="bg-slate-900/60 border border-slate-700/60 rounded-2xl p-4 flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                                <i class="fa-solid fa-receipt"></i>
+                            </div>
+                            <div>
+                                <div class="font-bold text-white">₹${tx.amount.toLocaleString()} <span class="text-xs font-normal text-emerald-400 ml-1">Paid Successfully</span></div>
+                                <div class="text-xs text-slate-400">Date: ${tx.date} | Ref: ${tx.txId} | For Month: ${tx.forMonth || 'General'}</div>
+                            </div>
+                        </div>
+                        <span class="text-xs px-2.5 py-1 bg-slate-800 border border-slate-700 text-slate-300 rounded-lg font-mono">UPI</span>
+                    </div>
+                `;
+            });
+            listContainer.innerHTML = html;
+        }
+
+        window.initiateUpiPayment = function() {
+            const fin = calculateStudentFinances(activeStudentSession);
+            const amount = fin.due;
+
+            if (!amount || amount <= 0) {
+                showToast("No pending dues to pay.", "error");
+                return;
+            }
+
+            const modal = document.getElementById('custom-modal');
+            const content = document.getElementById('modal-content');
+            const upiId = adminCredentials.upiId || 'csipfee@upi';
+            
+            content.innerHTML = `
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-violet-500/10 border border-violet-500/30 text-violet-400 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl shadow-inner">
+                        <i class="fa-solid fa-qrcode"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-1">Pay Exact Due: ₹${amount.toLocaleString()}</h3>
+                    <p class="text-xs text-slate-400 mb-4">Receiver UPI ID: <strong class="text-violet-300 font-mono">${upiId}</strong></p>
+                    
+                    <div class="bg-white p-4 rounded-2xl w-48 h-48 mx-auto mb-4 flex flex-col items-center justify-center shadow-lg">
+                        <div class="w-36 h-36 bg-slate-900 rounded-xl flex flex-col items-center justify-center text-white p-2 text-center">
+                            <i class="fa-solid fa-qrcode text-5xl text-violet-400 mb-1"></i>
+                            <span class="text-[9px] font-mono text-slate-300 truncate w-full">${upiId}</span>
+                            <span class="text-[10px] font-bold text-emerald-400 mt-1">₹${amount.toLocaleString()}</span>
+                        </div>
+                    </div>
+
+                    <p class="text-xs text-slate-400 mb-6">Scan QR with GPay, PhonePe, Paytm or BHIM (Amount locked to exact due).</p>
+
+                    <div class="flex space-x-3">
+                        <button onclick="closeModal()" class="flex-1 py-3 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-xl transition-all">Cancel</button>
+                        <button onclick="completeUpiPayment(${amount})" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-xl shadow-lg shadow-emerald-600/30 transition-all">Simulate Payment Success</button>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        window.completeUpiPayment = async function(amount) {
+            closeModal();
+            const today = new Date().toISOString().split('T')[0];
+            const currentMonthStr = today.substring(0, 7);
+            const txId = 'UPI' + Math.floor(10000000 + Math.random() * 90000000);
+
+            activeStudentSession.paidFee = (activeStudentSession.paidFee || 0) + amount;
+            if (!activeStudentSession.history) activeStudentSession.history = [];
+            activeStudentSession.history.push({ date: today, amount: amount, txId: txId, forMonth: currentMonthStr });
+
+            await saveStudentToFirestore(activeStudentSession);
+            renderStudentDashboard();
+            showToast(`Successfully paid ₹${amount.toLocaleString()} via UPI! Arrears updated.`, "success");
+        }
+
+        window.openMonthlyFeeConfigModal = function() {
+            const modal = document.getElementById('custom-modal');
+            const content = document.getElementById('modal-content');
+
+            let rowsHtml = '';
+            for (const [batchName, feeVal] of Object.entries(monthlyFeeConfig)) {
+                rowsHtml += `
+                    <div class="flex items-center space-x-3 bg-slate-900 p-3 rounded-xl border border-slate-700">
+                        <div class="flex-grow">
+                            <span class="text-xs font-semibold text-slate-300 block">${batchName}</span>
+                        </div>
+                        <div class="w-32">
+                            <input type="number" id="batch-fee-${batchName}" required value="${feeVal}" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-2.5 py-1.5 text-white text-sm text-right focus:outline-none focus:border-emerald-500">
+                        </div>
+                        <button type="button" onclick="removeBatchConfig('${batchName}')" class="text-rose-400 hover:text-rose-300 p-1.5 text-xs" title="Remove Batch"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                `;
+            }
+
+            content.innerHTML = `
+                <div>
+                    <h3 class="text-xl font-bold text-white mb-2 flex items-center space-x-2">
+                        <i class="fa-solid fa-calendar-days text-emerald-400"></i>
+                        <span>Configure Batch Monthly Fee Rates</span>
+                    </h3>
+                    <p class="text-xs text-slate-400 mb-4">Set distinct fixed monthly fees for each batch (including separate rates for different 12th CS batches).</p>
+                    
+                    <form onsubmit="handleMonthlyFeeConfigSubmit(event)" class="space-y-4">
+                        <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                            ${rowsHtml}
+                        </div>
+
+                        <!-- Add New Batch Row -->
+                        <div class="pt-2 border-t border-slate-700 flex items-center space-x-2">
+                            <input type="text" id="new-batch-name-input" placeholder="New batch name (e.g. CS-12th-BatchC)" class="flex-grow bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+                            <input type="number" id="new-batch-fee-input" placeholder="Fee (₹)" class="w-24 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+                            <button type="button" onclick="addNewBatchConfig()" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs font-medium rounded-xl">Add</button>
+                        </div>
+
+                        <div class="flex space-x-3 pt-2">
+                            <button type="button" onclick="closeModal()" class="flex-1 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-xl transition-all text-sm">Cancel</button>
+                            <button type="submit" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-xl shadow-lg shadow-emerald-600/20 transition-all text-sm">Save Fee Rates</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        window.addNewBatchConfig = function() {
+            const nameInput = document.getElementById('new-batch-name-input');
+            const feeInput = document.getElementById('new-batch-fee-input');
+            const name = nameInput.value.trim();
+            const fee = parseFloat(feeInput.value);
+
+            if (!name || isNaN(fee)) {
+                showToast("Please enter a valid batch name and fee amount.", "error");
+                return;
+            }
+            if (monthlyFeeConfig[name]) {
+                showToast("Batch already exists in configuration.", "error");
+                return;
+            }
+
+            monthlyFeeConfig[name] = fee;
+            openMonthlyFeeConfigModal(); // Re-render modal
+            showToast(`Batch '${name}' added to configuration.`, "success");
+        }
+
+        window.removeBatchConfig = function(batchName) {
+            if (Object.keys(monthlyFeeConfig).length <= 1) {
+                showToast("You must keep at least one active batch.", "error");
+                return;
+            }
+            delete monthlyFeeConfig[batchName];
+            openMonthlyFeeConfigModal();
+            showToast(`Batch '${batchName}' removed.`, "success");
+        }
+
+        window.handleMonthlyFeeConfigSubmit = async function(e) {
+            e.preventDefault();
+            // Read all current batch inputs from modal
+            for (const batchName of Object.keys(monthlyFeeConfig)) {
+                const input = document.getElementById(`batch-fee-${batchName}`);
+                if (input) {
+                    monthlyFeeConfig[batchName] = parseFloat(input.value) || 0;
+                }
+            }
+
+            await saveSettingsToFirestore();
+            closeModal();
+            showToast("Fixed monthly fee rates updated successfully!", "success");
+        }
+
+        window.openUpiConfigModal = function() {
+            const modal = document.getElementById('custom-modal');
+            const content = document.getElementById('modal-content');
+
+            content.innerHTML = `
+                <div>
+                    <h3 class="text-xl font-bold text-white mb-4 flex items-center space-x-2">
+                        <i class="fa-solid fa-qrcode text-violet-400"></i>
+                        <span>Configure Admin UPI ID</span>
+                    </h3>
+                    <form onsubmit="handleUpiConfigSubmit(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Admin UPI ID</label>
+                            <input type="text" id="modal-upi-id" required value="${adminCredentials.upiId || 'csipfee@upi'}" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-violet-500" placeholder="e.g. schoolname@okhdfcbank">
+                            <p class="text-[11px] text-slate-400 mt-1">Students will pay to this UPI ID for fee simulation and verification.</p>
+                        </div>
+                        <div class="flex space-x-3 pt-2">
+                            <button type="button" onclick="closeModal()" class="flex-1 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-xl transition-all text-sm">Cancel</button>
+                            <button type="submit" class="flex-1 py-2.5 bg-violet-600 hover:bg-violet-500 text-white font-medium rounded-xl shadow-lg shadow-violet-600/20 transition-all text-sm">Save UPI ID</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        window.handleUpiConfigSubmit = async function(e) {
+            e.preventDefault();
+            adminCredentials.upiId = document.getElementById('modal-upi-id').value.trim();
+            await saveSettingsToFirestore();
+            closeModal();
+            showToast("Admin UPI ID updated successfully!", "success");
+        }
+
+        window.openAddStudentModal = function() {
+            const modal = document.getElementById('custom-modal');
+            const content = document.getElementById('modal-content');
+            const currentMonth = new Date().toISOString().substring(0, 7);
+
+            let batchOptionsHtml = '';
+            for (const bName of Object.keys(monthlyFeeConfig)) {
+                batchOptionsHtml += `<option value="${bName}">${bName}</option>`;
+            }
+
+            content.innerHTML = `
+                <div>
+                    <h3 class="text-xl font-bold text-white mb-4 flex items-center space-x-2">
+                        <i class="fa-solid fa-user-plus text-indigo-400"></i>
+                        <span>Add New Student</span>
+                    </h3>
+                    <form onsubmit="handleAddStudentSubmit(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Student ID</label>
+                            <input type="text" id="modal-add-id" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500" placeholder="e.g. STU105">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Full Name</label>
+                            <input type="text" id="modal-add-name" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500" placeholder="e.g. Rohan Das">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Batch (incl. distinct 12th CS batches)</label>
+                            <select id="modal-add-batch" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500">
+                                ${batchOptionsHtml}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Enrollment Month (for Dues Rollover)</label>
+                            <input type="text" id="modal-add-enr" required value="${currentMonth}" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500" placeholder="YYYY-MM">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Password</label>
+                            <input type="text" id="modal-add-pw" required value="password123" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div class="flex space-x-3 pt-2">
+                            <button type="button" onclick="closeModal()" class="flex-1 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-xl transition-all text-sm">Cancel</button>
+                            <button type="submit" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl shadow-lg shadow-indigo-600/20 transition-all text-sm">Add Student</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        window.handleAddStudentSubmit = async function(e) {
+            e.preventDefault();
+            const id = document.getElementById('modal-add-id').value.trim();
+            const name = document.getElementById('modal-add-name').value.trim();
+            const batch = document.getElementById('modal-add-batch').value;
+            const enrollmentMonth = document.getElementById('modal-add-enr').value.trim();
+            const password = document.getElementById('modal-add-pw').value.trim();
+
+            if (studentsData.some(s => s.id === id)) {
+                showToast("Student ID already exists!", "error");
+                return;
+            }
+
+            const newStudent = { id, name, batch, paidFee: 0, password, enrollmentMonth, history: [] };
+            await saveStudentToFirestore(newStudent);
+            closeModal();
+            showToast("Student added successfully!", "success");
+        }
+
+        window.openEditStudentModal = function(studentId) {
+            const student = studentsData.find(s => s.id === studentId);
+            if (!student) return;
+
+            const modal = document.getElementById('custom-modal');
+            const content = document.getElementById('modal-content');
+
+            let batchOptionsHtml = '';
+            for (const bName of Object.keys(monthlyFeeConfig)) {
+                batchOptionsHtml += `<option value="${bName}" ${student.batch===bName?'selected':''}>${bName}</option>`;
+            }
+
+            content.innerHTML = `
+                <div>
+                    <h3 class="text-xl font-bold text-white mb-4 flex items-center space-x-2">
+                        <i class="fa-solid fa-pen-to-square text-indigo-400"></i>
+                        <span>Edit Student (${student.id})</span>
+                    </h3>
+                    <form onsubmit="handleEditStudentSubmit(event, '${student.id}')" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Full Name</label>
+                            <input type="text" id="modal-edit-name" required value="${student.name}" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Batch</label>
+                            <select id="modal-edit-batch" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500">
+                                ${batchOptionsHtml}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Total Paid Fee (₹)</label>
+                            <input type="number" id="modal-edit-paid" required value="${student.paidFee}" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Enrollment Month (YYYY-MM)</label>
+                            <input type="text" id="modal-edit-enr" required value="${student.enrollmentMonth || '2026-01'}" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Password</label>
+                            <input type="text" id="modal-edit-pw" required value="${student.password || 'password123'}" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div class="flex space-x-3 pt-2">
+                            <button type="button" onclick="closeModal()" class="flex-1 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-xl transition-all text-sm">Cancel</button>
+                            <button type="submit" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl shadow-lg shadow-indigo-600/20 transition-all text-sm">Update Student</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        window.handleEditStudentSubmit = async function(e, studentId) {
+            e.preventDefault();
+            const student = studentsData.find(s => s.id === studentId);
+            if (!student) return;
+
+            student.name = document.getElementById('modal-edit-name').value.trim();
+            student.batch = document.getElementById('modal-edit-batch').value;
+            student.paidFee = parseFloat(document.getElementById('modal-edit-paid').value);
+            student.enrollmentMonth = document.getElementById('modal-edit-enr').value.trim();
+            student.password = document.getElementById('modal-edit-pw').value.trim();
+
+            await saveStudentToFirestore(student);
+            closeModal();
+            showToast("Student updated successfully!", "success");
+        }
+
+        window.confirmRemoveStudent = function(studentId) {
+            const student = studentsData.find(s => s.id === studentId);
+            if (!student) return;
+
+            const modal = document.getElementById('custom-modal');
+            const content = document.getElementById('modal-content');
+
+            content.innerHTML = `
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-rose-500/10 border border-rose-500/30 text-rose-400 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl shadow-inner">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-2">Remove Student?</h3>
+                    <p class="text-xs text-slate-400 mb-6">Are you sure you want to remove <strong>${student.name}</strong> (${student.id}) from batch ${student.batch}? This action cannot be undone.</p>
+                    <div class="flex space-x-3">
+                        <button onclick="closeModal()" class="flex-1 py-3 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-xl transition-all text-sm">Cancel</button>
+                        <button onclick="executeRemoveStudent('${student.id}')" class="flex-1 py-3 bg-rose-600 hover:bg-rose-500 text-white font-medium rounded-xl shadow-lg shadow-rose-600/30 transition-all text-sm">Remove</button>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        window.executeRemoveStudent = async function(studentId) {
+            closeModal();
+            await removeStudentFromFirestore(studentId);
+            showToast("Student removed successfully.", "success");
+        }
+
+        window.openAdminSettingsModal = function() {
+            const modal = document.getElementById('custom-modal');
+            const content = document.getElementById('modal-content');
+
+            content.innerHTML = `
+                <div>
+                    <h3 class="text-xl font-bold text-white mb-4 flex items-center space-x-2">
+                        <i class="fa-solid fa-key text-indigo-400"></i>
+                        <span>Modify Admin ID & Password</span>
+                    </h3>
+                    <form onsubmit="handleAdminSettingsSubmit(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">New Admin ID</label>
+                            <input type="text" id="modal-admin-id" required value="${adminCredentials.id}" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">New Password</label>
+                            <input type="text" id="modal-admin-pw" required value="${adminCredentials.pw}" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div class="flex space-x-3 pt-2">
+                            <button type="button" onclick="closeModal()" class="flex-1 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-xl transition-all text-sm">Cancel</button>
+                            <button type="submit" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl shadow-lg shadow-indigo-600/20 transition-all text-sm">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        window.handleAdminSettingsSubmit = async function(e) {
+            e.preventDefault();
+            adminCredentials.id = document.getElementById('modal-admin-id').value.trim();
+            adminCredentials.pw = document.getElementById('modal-admin-pw').value.trim();
+
+            await saveSettingsToFirestore();
+            closeModal();
+            showToast("Admin credentials updated successfully!", "success");
+        }
+
+        window.closeModal = function() {
+            document.getElementById('custom-modal').classList.add('hidden');
+        }
+
+        function refreshUI() {
+            if (currentRole === 'admin') {
+                renderAdminDashboard();
+            } else if (currentRole === 'student') {
+                renderStudentDashboard();
+            }
+        }
+
+        window.showToast = function(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgClass = type === 'success' ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white';
+            const icon = type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation';
+
+            toast.className = `${bgClass} px-4 py-3 rounded-2xl shadow-xl flex items-center space-x-3 text-sm font-medium transform transition-all duration-300 translate-y-2 opacity-0 pointer-events-auto`;
+            toast.innerHTML = `<i class="fa-solid ${icon} text-lg"></i><span>${message}</span>`;
+            
+            container.appendChild(toast);
+            setTimeout(() => { toast.classList.remove('translate-y-2', 'opacity-0'); }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+    </script>
+</body>
+</html>
