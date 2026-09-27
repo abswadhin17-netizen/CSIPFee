@@ -354,12 +354,13 @@
         // Global Firebase Configuration & State Variables
         let appId = typeof __app_id !== 'undefined' ? __app_id : 'csipfee-app-default';
         let defaultFirebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { 
-            apiKey: "AIzaSyMockKeyForTesting123456", 
-            authDomain: "csipfee-app.firebaseapp.com",
-            projectId: "csipfee-app",
-            storageBucket: "csipfee-app.appspot.com",
-            messagingSenderId: "1234567890",
-            appId: "1:1234567890:web:abcdef"
+            apiKey: "AIzaSyBamToMh_YBHroaYQTmJoRBrGUH2LAqiPI", 
+            authDomain: "csipbyabs-fee-aed59.firebaseapp.com",
+            databaseURL: "https://csipbyabs-fee-aed59-default-rtdb.firebaseio.com",
+            projectId: "csipbyabs-fee-aed59",
+            storageBucket: "csipbyabs-fee-aed59.firebasestorage.app",
+            messagingSenderId: "400383606564",
+            appId: "1:400383606564:web:be8c51934ae7230006bdb1"
         };
 
         let app, db, auth;
@@ -369,15 +370,15 @@
 
         // App State Data
         let studentsData = [];
-        let adminCredentials = { id: 'admin', pw: 'admin123', upiId: 'csipfee@okhdfcbank' };
+        let adminCredentials = { id: 'admin', pw: 'admin123', upiId: 'abswadhin17-2@okaxis' };
         
         // Default monthly fee configuration supporting multiple batches, including separate 12th CS batches
         let monthlyFeeConfig = {
-            'CS-11th': 2500,
-            'CS-12th-BatchA': 3000,
-            'CS-12th-BatchB': 3500,
-            'IP-11th': 2500,
-            'IP-12th': 3000
+            'CS-11th': 1500,
+            'CS-12th-BatchA': 1200,
+            'CS-12th-BatchB': 1500,
+            'IP-11th': 1200,
+            'IP-12th': 1200
         };
         let activeFilterBatch = 'ALL';
 
@@ -422,13 +423,13 @@
 
         function loadMockInitialData() {
             monthlyFeeConfig = {
-                'CS-11th': 2500,
-                'CS-12th-BatchA': 3000,
-                'CS-12th-BatchB': 3500,
-                'IP-11th': 2500,
-                'IP-12th': 3000
+                'CS-11th': 1500,
+                'CS-12th-BatchA': 1200,
+                'CS-12th-BatchB': 1500,
+                'IP-11th': 1200,
+                'IP-12th': 1200
             };
-            adminCredentials = { id: 'admin', pw: 'admin123', upiId: 'csipfee@okhdfcbank' };
+            adminCredentials = { id: 'admin', pw: 'admin123', upiId: 'abswadhin17-2@okaxis' };
             studentsData = [
                 { id: 'STU101', name: 'Aarav Sharma', batch: 'CS-12th-BatchA', paidFee: 3000, password: 'password123', enrollmentMonth: '2026-01', history: [{date: '2026-01-15', amount: 3000, txId: 'UPI98234123', forMonth: '2026-01'}] },
                 { id: 'STU102', name: 'Priya Patel', batch: 'CS-12th-BatchB', paidFee: 3500, password: 'password123', enrollmentMonth: '2026-01', history: [{date: '2026-01-10', amount: 3500, txId: 'UPI88372641', forMonth: '2026-01'}] },
